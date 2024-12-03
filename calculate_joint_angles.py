@@ -3,7 +3,38 @@ import sys
 import utils
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.animation import FFMpegWriter
 
+def save_skeleton_animation(kpts, output_filename="skeleton_animation.mp4"):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    connections = [['hips', 'lefthip'], ['lefthip', 'leftknee'], ['leftknee', 'leftfoot'],
+                   ['hips', 'righthip'], ['righthip', 'rightknee'], ['rightknee', 'rightfoot'],
+                   ['hips', 'neck'], ['neck', 'leftshoulder'], ['leftshoulder', 'leftelbow'], ['leftelbow', 'leftwrist'],
+                   ['neck', 'rightshoulder'], ['rightshoulder', 'rightelbow'], ['rightelbow', 'rightwrist']
+                  ]
+
+    writer = FFMpegWriter(fps=15, metadata=dict(artist='Your Name'), bitrate=1800)
+    with writer.saving(fig, output_filename, dpi=100):
+        for framenum in range(kpts['hips'].shape[0]):
+            ax.cla()  # Clear previous frame
+            for conn in connections:
+                joint1, joint2 = conn
+                pos1 = kpts[joint1][framenum] / kpts['normalization']
+                pos2 = kpts[joint2][framenum] / kpts['normalization']
+                ax.plot(xs=[pos1[0], pos2[0]], ys=[pos1[1], pos2[1]], zs=[pos1[2], pos2[2]], color='blue')
+
+            ax.set_xlim3d(-4, 4)
+            ax.set_ylim3d(-4, 4)
+            ax.set_zlim3d(-4, 4)
+            ax.set_title("Skeleton Animation")
+            ax.set_xlabel("X")
+            ax.set_ylabel("Y")
+            ax.set_zlabel("Z")
+            writer.grab_frame()
+
+    print(f"Animation saved to {output_filename}")
 def read_keypoints(filename):
 
     num_keypoints = 12
@@ -388,5 +419,6 @@ if __name__ == '__main__':
     get_base_skeleton(filtered_kpts)
 
     calculate_joint_angles(filtered_kpts)
+    save_skeleton_animation(filtered_kpts, output_filename="skeleton_animation.mp4")
     #draw_skeleton_from_joint_coordinates(filtered_kpts)
     draw_skeleton_from_joint_angles(filtered_kpts)
